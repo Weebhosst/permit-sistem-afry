@@ -1,0 +1,3 @@
+permit_code,plate,owner,type,valid_from,valid_to,stnk_exp,simc_exp,sima_exp,status,notes
+PRM-20250812-IE7A,B 7787 XX,AFRIYANDI DWI YANUAR RAHMANDHANI,motor,2026-05-13,2028-09-28,2025-08-30,,,active,
+,B 6175 EIX,ATANG KOMARA,MOTOR,2025-08-25,2026-08-25,2026-08-25,2030-10-25,,active,,
