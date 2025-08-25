@@ -1031,8 +1031,8 @@
               </div>
             </div>
           </div>
-          <div class="border-4 border-slate-700 rounded-lg p-3 bg-white">
-            <canvas id="qrCodeCanvas"></canvas>
+          <div class="border-4 border-slate-700 rounded-lg p-4 bg-white min-h-[300px] flex items-center justify-center">
+            <div id="qrCodeCanvas" class="flex items-center justify-center"></div>
           </div>
           <p id="qrCodeMsg" class="text-sm text-center text-slate-300"></p>
         </div>
@@ -2951,66 +2951,72 @@
           qr.addData(text);
           qr.make();
           
-          // Set canvas size
-          canvas.width = size;
-          canvas.height = size;
+          // Create actual canvas element for proper rendering
+          const actualCanvas = document.createElement('canvas');
+          actualCanvas.width = size;
+          actualCanvas.height = size;
+          const ctx = actualCanvas.getContext('2d');
           
-          // Create QR code as image and append to canvas
-          const qrImage = document.createElement('img');
-          qrImage.src = qr.createDataURL(8, 4);
-          qrImage.style.width = size + 'px';
-          qrImage.style.height = size + 'px';
-          qrImage.style.imageRendering = 'pixelated';
+          // Set white background
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, size, size);
           
-          canvas.appendChild(qrImage);
+          // Get QR code data and draw it
+          const modules = qr.getModuleCount();
+          const cellSize = Math.floor(size / modules);
+          const offset = Math.floor((size - cellSize * modules) / 2);
+          
+          ctx.fillStyle = color || '#000000';
+          for (let row = 0; row < modules; row++) {
+            for (let col = 0; col < modules; col++) {
+              if (qr.isDark(row, col)) {
+                ctx.fillRect(
+                  offset + col * cellSize,
+                  offset + row * cellSize,
+                  cellSize,
+                  cellSize
+                );
+              }
+            }
+          }
+          
+          // Add canvas to the container
+          actualCanvas.style.maxWidth = '100%';
+          actualCanvas.style.height = 'auto';
+          canvas.appendChild(actualCanvas);
           
           msgEl.textContent = "QR Code berhasil dibuat.";
+          msgEl.style.color = "#10b981";
+          
+          // Store canvas for download
+          qrCodeInstance = actualCanvas;
+          
         } catch (e) {
           msgEl.textContent = "Gagal membuat QR Code: " + e.message;
+          msgEl.style.color = "#ef4444";
           console.error('QR Code generation error:', e);
         }
       };
 
       const downloadQRCode = () => {
-        const canvas = document.getElementById("qrCodeCanvas");
-        const img = canvas.querySelector('img');
-        
-        if (!img || !img.src) {
-          notify("QR Code belum dibuat atau tidak valid", "error");
+        if (!qrCodeInstance) {
+          notify("QR Code belum dibuat. Generate QR Code terlebih dahulu", "error");
           return;
         }
         
         try {
-          // Create a proper canvas to convert image
-          const downloadCanvas = document.createElement('canvas');
-          const ctx = downloadCanvas.getContext('2d');
-          const size = parseInt($("#qrCodeSize").value || "300");
-          
-          downloadCanvas.width = size;
-          downloadCanvas.height = size;
-          
-          // Fill with white background
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(0, 0, size, size);
-          
-          // Draw the QR image
-          const tempImg = new Image();
-          tempImg.onload = () => {
-            ctx.drawImage(tempImg, 0, 0, size, size);
-            
-            // Download the image
-            const url = downloadCanvas.toDataURL("image/png");
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `qrcode-${Date.now()}.png`;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            notify("QR Code berhasil diunduh", "success");
-          };
-          tempImg.src = img.src;
+          // Download the canvas as PNG
+          const url = qrCodeInstance.toDataURL("image/png");
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `qrcode-${Date.now()}.png`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          notify("QR Code berhasil diunduh", "success");
         } catch (e) {
           notify("Gagal mengunduh QR Code: " + e.message, "error");
+          console.error('Download error:', e);
         }
       };
 
